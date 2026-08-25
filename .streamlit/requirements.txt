@@ -4,3 +4,4 @@ python-dotenv
 pdfplumber
 weasyprint
 logsnag
+wkhtmltopdf
