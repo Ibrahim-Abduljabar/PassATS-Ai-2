@@ -3,7 +3,7 @@ import os
 import tempfile
 import pdfplumber
 from groq import Groq
-import pdfkit
+from weasyprint import HTML
 from logsnag import LogSnag
 
 log_client = LogSnag(token=st.secrets["LOGSNAG_TOKEN"], project="passats-ai")
@@ -37,17 +37,16 @@ def generate_pdf_from_text(text_content):
     """
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-        # استخدام pdfkit كبديل مستقر وآمن تماماً من الانهيارات
-        pdfkit.from_string(html_template, tmp.name)
+        HTML(string=html_template).write_pdf(tmp.name)
         path = tmp.name
 
     with open(path, "rb") as f:
         return f.read()
 
 st.set_page_config(page_title="PassATS AI", layout="wide")
-st.title("PassATS AI — ATS-Compliant Resume Optimization System")
+st.title("PassATS AI — ATS‑Optimized Resume Enhancer")
 
-uploaded_pdf = st.file_uploader("Upload Resume (PDF Only)", type=["pdf"])
+uploaded_pdf = st.file_uploader("Upload your resume (PDF only)", type=["pdf"])
 
 if "job_desc_list" not in st.session_state:
     st.session_state.job_desc_list = [""]
@@ -58,14 +57,14 @@ def add_job_desc():
 st.subheader("Job Descriptions")
 for i in range(len(st.session_state.job_desc_list)):
     st.session_state.job_desc_list[i] = st.text_area(
-        f"Job Description No. {i+1}",
+        f"Job Description #{i+1}",
         st.session_state.job_desc_list[i],
         height=180
     )
 
 st.button("➕ Add Another Job Description", on_click=add_job_desc)
 
-start = st.button("Start Resume Optimization Now")
+start = st.button("Start Resume Optimization")
 
 if start:
     if not uploaded_pdf:
@@ -75,16 +74,17 @@ if start:
         job_descriptions = "\n\n---\n\n".join(st.session_state.job_desc_list)
 
         system_prompt = """
-        You are a world-class expert in writing ATS-compliant resumes.
+        You are a world‑class expert in writing ATS‑optimized resumes.
 
-        Language Rules:
-        - Write naturally and clearly in English.
-        - Ensure proper grammar, phrasing, and formatting.
-        - Maintain a professional, executive tone throughout.
-        - Avoid mixing languages within the same sentence or section.
-        - Keep the formatting consistent and clean.
+        Language rules:
+        - Write English normally and clearly.
+        - If a section is originally Arabic, keep it Arabic.
+        - No mixing languages inside the same sentence.
+        - If Arabic and English appear next to each other, split them into two lines.
+        - No translation unless the original text is unclear.
+        - Preserve the original language of each section.
 
-        Required Structure:
+        Required structure:
         1) Personal Information
         2) Professional Summary
         3) Technical Skills
@@ -94,26 +94,26 @@ if start:
         7) Languages
         8) Certifications
 
-        Formatting Rules:
-        - Do NOT use HTML.
-        - Do NOT use Markdown.
-        - Use hyphens "-" for lists and bullet points only.
+        Formatting rules:
+        - No HTML.
+        - No Markdown.
+        - Use "-" for bullet points only.
         """
 
         user_prompt = f"""
-        Extracted Resume Content from PDF:
+        Extracted resume text from PDF:
         {cv_text}
 
-        Job Descriptions:
+        Job descriptions:
         {job_descriptions}
 
-        Rewrite the resume entirely in English, ensuring it matches the specified structure and complies with all ATS rules.
+        Rewrite the resume while preserving the original language of each section.
         """
 
-        st.info("Optimizing resume via Groq…")
+        st.info("Optimizing resume using Groq…")
 
         response = client.chat.completions.create(
-            model="openai/gpt-oss-120b",  
+            model="openai/gpt-oss-120b",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
@@ -123,14 +123,14 @@ if start:
 
         final_cv_text = response.choices[0].message.content
 
-        st.success("Optimized resume generated successfully!")
-        st.subheader("Optimized Resume Output")
-        st.text_area("Final CV Content", final_cv_text, height=500)
+        st.success("Resume optimized successfully!")
+        st.subheader("Optimized Resume")
+        st.text_area("Final CV", final_cv_text, height=500)
 
         pdf_bytes = generate_pdf_from_text(final_cv_text)
 
         st.download_button(
-            label="Download Final PDF File",
+            label="Download Final PDF",
             data=pdf_bytes,
             file_name="optimized_cv.pdf",
             mime="application/pdf"
