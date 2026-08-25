@@ -1,14 +1,9 @@
 import streamlit as st
 import os
-import sys 
-
-if sys.platform.startswith("linux"):
-    os.environ["LD_LIBRARY_PATH"] = "/usr/lib/x86_64-linux-gnu:" + os.environ.get("LD_LIBRARY_PATH", "")
-
 import tempfile
 import pdfplumber
 from groq import Groq
-from weasyprint import HTML
+import pdfkit
 from logsnag import LogSnag
 
 log_client = LogSnag(token=st.secrets["LOGSNAG_TOKEN"], project="passats-ai")
@@ -42,7 +37,8 @@ def generate_pdf_from_text(text_content):
     """
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-        HTML(string=html_template).write_pdf(tmp.name)
+        # استخدام pdfkit كبديل مستقر وآمن تماماً من الانهيارات
+        pdfkit.from_string(html_template, tmp.name)
         path = tmp.name
 
     with open(path, "rb") as f:
