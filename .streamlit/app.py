@@ -1,5 +1,10 @@
 import streamlit as st
 import os
+import sys 
+
+if sys.platform.startswith("linux"):
+    os.environ["LD_LIBRARY_PATH"] = "/usr/lib/x86_64-linux-gnu:" + os.environ.get("LD_LIBRARY_PATH", "")
+
 import tempfile
 import pdfplumber
 from groq import Groq
