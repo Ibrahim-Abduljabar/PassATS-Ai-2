@@ -1,5 +1,6 @@
 streamlit
 groq
+python-dotenv
 pdfplumber
+weasyprint
 logsnag
-pdfkit
