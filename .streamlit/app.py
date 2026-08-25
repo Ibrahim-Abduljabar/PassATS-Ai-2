@@ -22,8 +22,8 @@ def generate_pdf_from_text(text_content):
         <style>
             body {{
                 font-family: Arial, sans-serif;
-                direction: ltr;
-                text-align: left;
+                direction: rtl;
+                text-align: right;
                 line-height: 1.8;
                 font-size: 16px;
                 padding: 30px;
@@ -44,9 +44,9 @@ def generate_pdf_from_text(text_content):
         return f.read()
 
 st.set_page_config(page_title="PassATS AI", layout="wide")
-st.title("PassATS AI — ATS‑Optimized Resume Enhancer")
+st.title("PassATS AI — نظام تحسين السيرة الذاتية المتوافق مع ATS")
 
-uploaded_pdf = st.file_uploader("Upload your resume (PDF only)", type=["pdf"])
+uploaded_pdf = st.file_uploader("ارفع السيرة الذاتية (PDF فقط)", type=["pdf"])
 
 if "job_desc_list" not in st.session_state:
     st.session_state.job_desc_list = [""]
@@ -54,66 +54,67 @@ if "job_desc_list" not in st.session_state:
 def add_job_desc():
     st.session_state.job_desc_list.append("")
 
-st.subheader("Job Descriptions")
+st.subheader("الأوصاف الوظيفية")
 for i in range(len(st.session_state.job_desc_list)):
     st.session_state.job_desc_list[i] = st.text_area(
-        f"Job Description #{i+1}",
+        f"الوصف الوظيفي رقم {i+1}",
         st.session_state.job_desc_list[i],
         height=180
     )
 
-st.button("➕ Add Another Job Description", on_click=add_job_desc)
+st.button("➕ أضف وصف وظيفي آخر", on_click=add_job_desc)
 
-start = st.button("Start Resume Optimization")
+start = st.button("ابدأ تحسين السيرة الذاتية الآن")
 
 if start:
     if not uploaded_pdf:
-        st.error("Please upload a PDF file.")
+        st.error("الرجاء رفع ملف PDF.")
     else:
         cv_text = extract_pdf_text(uploaded_pdf)
         job_descriptions = "\n\n---\n\n".join(st.session_state.job_desc_list)
 
         system_prompt = """
-        You are a world‑class expert in writing ATS‑optimized resumes.
+        أنت خبير عالمي في كتابة السير الذاتية المتوافقة مع ATS.
 
-        Language rules:
-        - Write English normally and clearly.
-        - If a section is originally Arabic, keep it Arabic.
-        - No mixing languages inside the same sentence.
-        - If Arabic and English appear next to each other, split them into two lines.
-        - No translation unless the original text is unclear.
-        - Preserve the original language of each section.
+        قواعد اللغة:
+        - اكتب العربي بشكل طبيعي وواضح بدون أي تكسير أو انعكاس.
+        - اكتب العربي من اليمين إلى اليسار بشكل صحيح.
+        - إذا كان القسم إنجليزي، اكتبه إنجليزي طبيعي.
+        - ممنوع دمج لغتين داخل نفس الجملة.
+        - إذا وجدت كلمات عربية وإنجليزية متجاورة، افصلها إلى سطرين.
+        - ممنوع الترجمة إلا إذا كان النص الأصلي غير مفهوم.
+        - حافظ على اللغة الأصلية لكل قسم كما جاءت.
 
-        Required structure:
-        1) Personal Information
-        2) Professional Summary
-        3) Technical Skills
-        4) Work Experience
-        5) Projects
-        6) Education
-        7) Languages
-        8) Certifications
+        الهيكل المطلوب:
+        1) المعلومات الشخصية
+        2) الملخص المهني
+        3) المهارات التقنية
+        4) الخبرات العملية
+        5) المشاريع
+        6) التعليم
+        7) اللغات
+        8) الشهادات
 
-        Formatting rules:
-        - No HTML.
-        - No Markdown.
-        - Use "-" for bullet points only.
+        قواعد التنسيق:
+        - لا تستخدم HTML.
+        - لا تستخدم Markdown.
+        - استخدم الشرطات "-" للقوائم فقط.
         """
 
         user_prompt = f"""
-        Extracted resume text from PDF:
+        السيرة الذاتية المستخرجة من PDF:
         {cv_text}
 
-        Job descriptions:
+        الأوصاف الوظيفية:
         {job_descriptions}
 
-        Rewrite the resume while preserving the original language of each section.
+        أعد كتابة السيرة الذاتية مع الحفاظ على اللغة الأصلية لكل قسم.
         """
 
-        st.info("Optimizing resume using Groq…")
+        st.info("جاري تحسين السيرة الذاتية عبر Groq…")
 
         response = client.chat.completions.create(
-            model="openai/gpt-oss-120b",
+            model="openai/gpt-oss-120b",  
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
@@ -123,15 +124,16 @@ if start:
 
         final_cv_text = response.choices[0].message.content
 
-        st.success("Resume optimized successfully!")
-        st.subheader("Optimized Resume")
-        st.text_area("Final CV", final_cv_text, height=500)
+        st.success("تم إنشاء السيرة الذاتية المحسّنة!")
+        st.subheader("السيرة الذاتية بعد التحسين")
+        st.text_area("CV النهائي", final_cv_text, height=500)
 
         pdf_bytes = generate_pdf_from_text(final_cv_text)
 
         st.download_button(
-            label="Download Final PDF",
+            label="تحميل ملف PDF النهائي",
             data=pdf_bytes,
             file_name="optimized_cv.pdf",
             mime="application/pdf"
         )
+ 
